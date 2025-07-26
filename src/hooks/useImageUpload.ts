@@ -281,54 +281,78 @@ export const useImageUpload = () => {
           supabaseUrl === 'your_supabase_url_here' || 
           supabaseKey === 'your_supabase_anon_key_here' ||
           supabaseUrl.includes('placeholder')) {
-        console.warn('Supabase not configured, using fallback image')
+        console.warn('Supabase not configured, using fallback image');
         return null
       }
 
       const cleanProductId = productId;
             
-      // Query with improved error handling and shorter timeout
-      const timeoutPromise = new Promise<{ data: null, error: { message: string } }>((_, reject) => {
-        setTimeout(() => reject(new Error('Database query timeout')), 3000);
-      });
-
-      const queryPromise = supabase
-        .from('product_image_associations')
-        .select(`
-          image:product_images(public_url)
-        `)
-        .eq('product_id', cleanProductId)
-        .maybeSingle();
-
-      const result = await Promise.race([queryPromise, timeoutPromise]);
+      // Add timeout and better error handling with retry logic
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 15000);
       
-      if (!result) {
-        return null;
-      } else if (result.error) {
-        // Handle specific error types
-        if (result.error.message.includes('Failed to fetch') || 
-            result.error.message.includes('fetch')) {
-          console.warn(`🌐 Network error loading image for product ${cleanProductId} - using fallback`);
-        } else {
-          console.warn(`⚠️ Database error loading image for product ${cleanProductId}:`, result.error.message);
+      try {
+        // Retry logic for network issues
+        let retryCount = 0;
+        const maxRetries = 2;
+        
+        while (retryCount <= maxRetries) {
+          try {
+            const { data, error } = await supabase
+              .from('product_image_associations')
+              .select(`
+                image:product_images(public_url)
+              `)
+              .eq('product_id', cleanProductId)
+              .maybeSingle()
+              .abortSignal(controller.signal);
+            
+            clearTimeout(timeoutId);
+            
+            if (error) {
+              // Handle specific error types
+              if (error.message.includes('Failed to fetch') || 
+                  error.message.includes('fetch') ||
+                  error.message.includes('NetworkError')) {
+                console.warn(`🌐 Network error loading image for product ${cleanProductId} - using fallback`);
+              } else {
+                console.warn(`⚠️ Database error loading image for product ${cleanProductId}:`, error.message);
+              }
+              return null;
+            }
+
+            if (!data) {
+              return null;
+            }
+            
+            return data.image?.public_url || null;
+          } catch (fetchError) {
+            retryCount++;
+            
+            if (retryCount > maxRetries) {
+              throw fetchError;
+            }
+            
+            // Wait before retry (exponential backoff)
+            await new Promise(resolve => setTimeout(resolve, 1000 * retryCount));
+            console.log(`🔄 Retry ${retryCount}/${maxRetries} for product ${cleanProductId}`);
+          }
         }
-        return null;
-      }
-      
-      const { data } = result;
+        
 
-      if (!data) {
         return null;
+      } catch (fetchError) {
+        clearTimeout(timeoutId);
+        throw fetchError;
       }
-      
-      return data.image?.public_url || null;
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Unknown error';
       
       // Handle different types of network errors gracefully
-      if (err instanceof TypeError && (errorMessage.includes('Failed to fetch') || errorMessage.includes('fetch'))) {
+      if (err instanceof TypeError && (errorMessage.includes('Failed to fetch') || 
+          errorMessage.includes('fetch') || errorMessage.includes('NetworkError'))) {
         console.warn(`🌐 Network connectivity issue - using fallback image for product ${productId}`);
-      } else if (errorMessage.includes('timeout')) {
+      } else if (errorMessage.includes('timeout') || errorMessage.includes('aborted')) {
         console.warn(`⏱️ Request timeout - using fallback image for product ${productId}`);
       } else {
         console.warn(`⚠️ Unexpected error loading image for product ${productId}:`, errorMessage);
