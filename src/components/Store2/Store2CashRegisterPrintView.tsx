@@ -164,7 +164,7 @@ const Store2CashRegisterPrintView: React.FC<Store2CashRegisterPrintViewProps> = 
             <div style="border-top: 1px solid black; padding-top: 3px; margin-top: 3px;">
               <div class="flex-between bold">
                 <span>SALDO ESPERADO:</span>
-                <span>${formatPrice(summary?.expected_balance || 0)}</span>
+                <span>{formatPrice((register.opening_amount || 0) + (summary?.sales_total || 0) + (summary?.other_income_total || 0) - (summary?.total_expense || 0))}</span>
               </div>
             </div>
             ${register.closing_amount !== null ? `
@@ -175,9 +175,17 @@ const Store2CashRegisterPrintView: React.FC<Store2CashRegisterPrintViewProps> = 
             <div class="flex-between">
               <span>Diferença:</span>
               <span class="bold">
-                ${formatPrice((register.closing_amount || 0) - (summary?.expected_balance || 0))}
+                ${(() => {
+                  const expectedBalance = (register.opening_amount || 0) + (summary?.sales_total || 0) + (summary?.other_income_total || 0) - (summary?.total_expense || 0);
+                  const difference = (register.closing_amount || 0) - expectedBalance;
+                  return formatPrice(difference);
+                })()}
                 <span class="small">
-                  ${((register.closing_amount || 0) - (summary?.expected_balance || 0)) < 0 ? '(falta)' : ((register.closing_amount || 0) - (summary?.expected_balance || 0)) > 0 ? '(sobra)' : '(exato)'}
+                  ${(() => {
+                    const expectedBalance = (register.opening_amount || 0) + (summary?.sales_total || 0) + (summary?.other_income_total || 0) - (summary?.total_expense || 0);
+                    const difference = (register.closing_amount || 0) - expectedBalance;
+                    return difference < 0 ? ' (falta)' : difference > 0 ? ' (sobra)' : ' (exato)';
+                  })()}
                 </span>
               </span>
             </div>
@@ -399,7 +407,7 @@ const Store2CashRegisterPrintView: React.FC<Store2CashRegisterPrintViewProps> = 
                   <div className="pt-2 border-t border-gray-300">
                     <div className="flex justify-between font-bold">
                       <span>SALDO ESPERADO:</span>
-                      <span>{formatPrice(summary?.expected_balance || 0)}</span>
+                      <span>{formatPrice((register.opening_amount || 0) + (summary?.sales_total || 0) + (summary?.other_income_total || 0) - (summary?.total_expense || 0))}</span>
                     </div>
                   </div>
                   {register.closing_amount !== null && (
@@ -411,9 +419,17 @@ const Store2CashRegisterPrintView: React.FC<Store2CashRegisterPrintViewProps> = 
                       <div className="flex justify-between">
                         <span>Diferença:</span>
                         <span className="font-bold">
-                          {formatPrice((register.closing_amount || 0) - (summary?.expected_balance || 0))}
+                          {(() => {
+                            const expectedBalance = (register.opening_amount || 0) + (summary?.sales_total || 0) + (summary?.other_income_total || 0) - (summary?.total_expense || 0);
+                            const difference = (register.closing_amount || 0) - expectedBalance;
+                            return formatPrice(difference);
+                          })()}
                           <span className="text-xs ml-1">
-                            {((register.closing_amount || 0) - (summary?.expected_balance || 0)) < 0 ? '(falta)' : ((register.closing_amount || 0) - (summary?.expected_balance || 0)) > 0 ? '(sobra)' : '(exato)'}
+                            {(() => {
+                              const expectedBalance = (register.opening_amount || 0) + (summary?.sales_total || 0) + (summary?.other_income_total || 0) - (summary?.total_expense || 0);
+                              const difference = (register.closing_amount || 0) - expectedBalance;
+                              return difference < 0 ? '(falta)' : difference > 0 ? '(sobra)' : '(exato)';
+                            })()}
                           </span>
                         </span>
                       </div>
@@ -551,9 +567,17 @@ const Store2CashRegisterPrintView: React.FC<Store2CashRegisterPrintViewProps> = 
                     <span>Diferença:</span>
                     <span style={{ fontWeight: 'bold' }}>
                       {formatPrice((register.closing_amount || 0) - (summary?.expected_balance || 0))}
-                      <span style={{ fontSize: '8px', marginLeft: '4px' }}>
+                    {(() => {
+                      const expectedBalance = (register.opening_amount || 0) + (summary?.sales_total || 0) + (summary?.other_income_total || 0) - (summary?.total_expense || 0);
+                      const difference = (register.closing_amount || 0) - expectedBalance;
+                      return formatPrice(difference);
+                    })()}
                         {((register.closing_amount || 0) - (summary?.expected_balance || 0)) < 0 ? '(falta)' : ((register.closing_amount || 0) - (summary?.expected_balance || 0)) > 0 ? '(sobra)' : '(exato)'}
-                      </span>
+                      {(() => {
+                        const expectedBalance = (register.opening_amount || 0) + (summary?.sales_total || 0) + (summary?.other_income_total || 0) - (summary?.total_expense || 0);
+                        const difference = (register.closing_amount || 0) - expectedBalance;
+                        return difference < 0 ? '(falta)' : difference > 0 ? '(sobra)' : '(exato)';
+                      })()}
                     </span>
                   </div>
                 </>
