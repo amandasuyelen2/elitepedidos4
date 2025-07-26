@@ -57,6 +57,7 @@ export const useDeliveryOrders = () => {
       const { data, error } = await supabase
         .from('orders')
         .select('*')
+        .neq('status', 'cancelled')
         .gte('created_at', weekStart.toISOString())
         .lte('created_at', weekEnd.toISOString())
         .order('created_at', { ascending: false });

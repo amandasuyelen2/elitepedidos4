@@ -71,8 +71,8 @@ const DeliveryOrdersPage: React.FC = () => {
 
   // Calculate delivery statistics
   useEffect(() => {
-    // Usar todos os pedidos da semana atual
-    const weekOrders = orders;
+    // Usar apenas pedidos não cancelados da semana atual
+    const weekOrders = orders.filter(order => order.status !== 'cancelled');
     
     const completedOrders = weekOrders.filter(order => 
       order.status === 'delivered'
