@@ -71,16 +71,14 @@ const DeliveryOrdersPage: React.FC = () => {
 
   // Calculate delivery statistics
   useEffect(() => {
-    const today = new Date().toDateString();
-    const todayOrders = orders.filter(order => 
-      new Date(order.created_at).toDateString() === today
-    );
+    // Usar todos os pedidos da semana atual
+    const weekOrders = orders;
     
-    const completedOrders = todayOrders.filter(order => 
+    const completedOrders = weekOrders.filter(order => 
       order.status === 'delivered'
     );
     
-    const totalFees = todayOrders.reduce((sum, order) => 
+    const totalFees = weekOrders.reduce((sum, order) => 
       sum + (order.delivery_fee || 0), 0
     );
     
@@ -89,7 +87,7 @@ const DeliveryOrdersPage: React.FC = () => {
     );
     
     setDeliveryStats({
-      totalDeliveries: todayOrders.length,
+      totalDeliveries: weekOrders.length,
       totalFees: completedFees,
       averageFee: completedOrders.length > 0 ? completedFees / completedOrders.length : 0,
       completedDeliveries: completedOrders.length
@@ -285,6 +283,35 @@ const DeliveryOrdersPage: React.FC = () => {
     window.open(`https://wa.me/${phoneWithCountryCode}?text=${encodeURIComponent(message)}`, '_blank');
   };
 
+  // Função para obter informações da semana atual
+  const getWeekInfo = () => {
+    const now = new Date();
+    const currentDay = now.getDay();
+    const currentHour = now.getHours();
+    
+    // Calcular início da semana (segunda às 10h)
+    let daysToSubtract = currentDay === 0 ? 6 : currentDay - 1;
+    if (currentDay === 1 && currentHour < 10) {
+      daysToSubtract = 7;
+    }
+    
+    const weekStart = new Date(now);
+    weekStart.setDate(now.getDate() - daysToSubtract);
+    weekStart.setHours(10, 0, 0, 0);
+    
+    const weekEnd = new Date(weekStart);
+    weekEnd.setDate(weekStart.getDate() + 6);
+    weekEnd.setHours(23, 59, 59, 999);
+    
+    return {
+      start: weekStart,
+      end: weekEnd,
+      isNewWeekSoon: currentDay === 1 && currentHour >= 9 && currentHour < 10
+    };
+  };
+
+  const weekInfo = getWeekInfo();
+
   if (loading) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
@@ -368,15 +395,15 @@ const DeliveryOrdersPage: React.FC = () => {
                 <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1" />
                 </svg>
-                Ganhos de Hoje
+                Ganhos da Semana
               </h2>
               <p className="text-green-100 text-sm">
-                {new Date().toLocaleDateString('pt-BR', { 
-                  weekday: 'long', 
-                  year: 'numeric', 
-                  month: 'long', 
-                  day: 'numeric' 
-                })}
+                {weekInfo.start.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' })} a {weekInfo.end.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' })}
+                {weekInfo.isNewWeekSoon && (
+                  <span className="ml-2 bg-yellow-400 text-yellow-900 px-2 py-1 rounded-full text-xs font-bold">
+                    ⏰ Nova semana em breve!
+                  </span>
+                )}
               </p>
             </div>
             <div className="text-right">
@@ -393,7 +420,7 @@ const DeliveryOrdersPage: React.FC = () => {
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
             <div className="bg-white/10 backdrop-blur-sm rounded-lg p-3 text-center">
               <p className="text-2xl font-bold">{deliveryStats.totalDeliveries}</p>
-              <p className="text-green-100 text-sm">Pedidos Hoje</p>
+              <p className="text-green-100 text-sm">Pedidos Semana</p>
             </div>
             
             <div className="bg-white/10 backdrop-blur-sm rounded-lg p-3 text-center">
@@ -424,7 +451,7 @@ const DeliveryOrdersPage: React.FC = () => {
           {deliveryStats.totalDeliveries > 0 && (
             <div className="mt-4 bg-white/10 backdrop-blur-sm rounded-lg p-3">
               <div className="flex items-center justify-between text-sm">
-                <span>Progresso do Dia:</span>
+                <span>Progresso da Semana:</span>
                 <span>{deliveryStats.completedDeliveries} de {deliveryStats.totalDeliveries} pedidos</span>
               </div>
               <div className="w-full bg-white/20 rounded-full h-2 mt-2">
@@ -439,6 +466,20 @@ const DeliveryOrdersPage: React.FC = () => {
               </div>
             </div>
           )}
+          
+          {/* Informação sobre o ciclo semanal */}
+          <div className="mt-4 bg-white/10 backdrop-blur-sm rounded-lg p-3">
+            <div className="flex items-center justify-between text-sm">
+              <span>📅 Ciclo Semanal:</span>
+              <span>Segunda 10h → Segunda 10h</span>
+            </div>
+            <div className="text-xs text-green-100 mt-1">
+              {weekInfo.isNewWeekSoon 
+                ? '⏰ Nova semana começa em breve (Segunda 10h)'
+                : 'Semana atual em andamento'
+              }
+            </div>
+          </div>
         </div>
 
         {/* Stats */}
@@ -448,10 +489,13 @@ const DeliveryOrdersPage: React.FC = () => {
               <Package size={24} className="text-green-600" />
               <div>
                 <h2 className="text-base sm:text-lg font-semibold text-gray-800">
-                  Pedidos de Hoje
+                  Pedidos da Semana
                 </h2>
                 <p className="text-sm sm:text-base text-gray-600">
-                  {orders.length} pedido(s) confirmados hoje ({new Date().toLocaleDateString('pt-BR')})
+                  {orders.length} pedido(s) confirmados nesta semana
+                </p>
+                <p className="text-xs text-gray-500">
+                  📅 {weekInfo.start.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric' })} 10h → {weekInfo.end.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric' })} 10h
                 </p>
                 <div className="flex items-center gap-2 mt-1">
                   <Clock size={14} className="text-gray-500" />
@@ -528,10 +572,13 @@ const DeliveryOrdersPage: React.FC = () => {
             <div className="bg-white rounded-xl shadow-sm p-6 sm:p-12 text-center">
               <Package size={48} className="mx-auto text-gray-300 mb-4" />
               <h3 className="text-base sm:text-lg font-medium text-gray-600 mb-2">
-                Todos os Pedidos de Hoje
+                Pedidos da Semana Atual
               </h3>
               <p className="text-sm sm:text-base text-gray-500">
-                {orders.length} pedido(s) de hoje ({new Date().toLocaleDateString('pt-BR')})
+                {orders.length} pedido(s) desta semana
+              </p>
+              <p className="text-xs text-gray-400 mt-2">
+                📅 Semana: {weekInfo.start.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' })} a {weekInfo.end.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' })}
               </p>
               {autoRefresh && (
                 <div className="mt-4 flex items-center justify-center gap-2 text-sm text-green-600">
