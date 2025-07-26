@@ -641,13 +641,15 @@ const Store2CashRegisterPrintView: React.FC<Store2CashRegisterPrintViewProps> = 
             <p style={{ fontSize: '10px', fontWeight: 'bold', marginBottom: '5px' }}>MOVIMENTAÇÕES DETALHADAS - LOJA 2:</p>
             
             {entries.length === 0 ? (
-              <div style={{ fontSize: '10px', textAlign: 'center', padding: '10px 0' }}>
-                Nenhuma movimentação registrada
-              </div>
+              <>
+                <div style={{ fontSize: '10px', textAlign: 'center', padding: '10px 0' }}>
+                  Nenhuma movimentação registrada
+                </div>
                 <div className="flex justify-between">
                   <span>Número de Vendas:</span>
                   <span>{summary?.sales_count || 0}</span>
                 </div>
+              </>
             ) : (
               entries.map((entry, index) => (
                 <div key={entry.id} style={{ marginBottom: '8px', borderBottom: '1px dotted black', paddingBottom: '5px' }}>
