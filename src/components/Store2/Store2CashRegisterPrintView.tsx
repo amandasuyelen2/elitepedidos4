@@ -577,22 +577,20 @@ const Store2CashRegisterPrintView: React.FC<Store2CashRegisterPrintViewProps> = 
               </div>
             ) : (
               entries.map((entry, index) => (
-                  <span>{formatPrice(summary.sales_total || 0)}</span>
-                  <div style={{ fontSize: '10px' }}>
+                <div key={entry.id} style={{ fontSize: '10px', marginBottom: '10px', borderBottom: '1px dotted black', paddingBottom: '5px' }}>
                     <div style={{ display: 'flex', justifyContent: 'space-between', fontWeight: 'bold', marginBottom: '2px' }}>
                       <span>{index + 1}. {entry.type === 'income' ? 'ENTRADA' : 'SAÍDA'}</span>
-                  <span>{formatPrice(summary.other_income_total || 0)}</span>
+                      <span>
                         {entry.type === 'income' ? '+' : '-'}{formatPrice(entry.amount)}
                       </span>
                     </div>
-                  <span>{formatPrice(summary.total_expense || 0)}</span>
+                    
                     <div style={{ marginLeft: '8px' }}>
                       <div>Descrição: {entry.description}</div>
                       <div>Forma: {getPaymentMethodLabel(entry.payment_method)}</div>
                       <div>Data: {formatDate(entry.created_at)}</div>
-                    <span>{formatPrice(summary.expected_balance || 0)}</span>
+                    </div>
                   </div>
-                </div>
               ))
             )}
           </div>
