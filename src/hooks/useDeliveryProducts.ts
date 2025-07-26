@@ -117,13 +117,19 @@ export const useDeliveryProducts = () => {
     try {
       console.log('✏️ Atualizando produto:', id, updates);
       
+      // Verificar se o produto existe antes de atualizar
+      const existingProduct = products.find(p => p.id === id);
+      if (!existingProduct) {
+        throw new Error(`Produto com ID ${id} não encontrado na lista local`);
+      }
+      
       // 1. Verificar se o produto existe antes de tentar atualizar
       const { data: existingProduct, error: checkError } = await supabase
         .from('delivery_products')
         .select('id')
         .eq('id', id);
 
-      if (checkError) {
+      if (checkError && checkError.code !== 'PGRST116') {
         console.error('❌ Erro ao verificar existência do produto:', checkError);
         throw new Error(`Erro ao verificar produto: ${checkError.message}`);
       }
@@ -131,7 +137,7 @@ export const useDeliveryProducts = () => {
       // 2. Verificar se o produto foi encontrado
       if (!existingProduct || existingProduct.length === 0) {
         console.error('❌ Produto não encontrado no banco:', id);
-        throw new Error(`Produto com ID ${id} não existe no banco de dados`);
+        throw new Error(`Produto com ID ${id} não foi encontrado no banco de dados`);
       }
 
       console.log('✅ Produto encontrado, prosseguindo com atualização');
@@ -139,6 +145,11 @@ export const useDeliveryProducts = () => {
       // Remove campos que podem causar conflito ou não existem no banco
       const { created_at, updated_at, has_complements, ...cleanUpdates } = updates as any;
       
+      console.log('📝 Dados limpos para atualização:', {
+        id,
+        cleanUpdates,
+        originalUpdates: updates
+      });
       // 3. Realizar a atualização
       const { data, error } = await supabase
         .from('delivery_products')
@@ -159,7 +170,12 @@ export const useDeliveryProducts = () => {
         throw new Error(`Produto com ID ${id} não foi encontrado para atualização`);
       }
       
+      console.log('✅ Produto atualizado no banco:', data);
+      
+      // Forçar atualização do estado local
       setProducts(prev => prev.map(p => p.id === id ? data : p));
+      
+      console.log('✅ Estado local atualizado');
       console.log('✅ Produto atualizado:', data);
       return data;
     } catch (err) {
