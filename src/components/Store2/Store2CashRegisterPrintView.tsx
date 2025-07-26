@@ -696,10 +696,6 @@ const Store2CashRegisterPrintView: React.FC<Store2CashRegisterPrintViewProps> = 
                       <span>{getPaymentMethodLabel(method)}:</span>
                       <span>{formatPrice(total)}</span>
                     </div>
-                    <div className="flex justify-between">
-                      <span>Percentual de Diferença:</span>
-                      <span>{summary?.expected_balance > 0 ? (((register.closing_amount || 0) - (summary.expected_balance || 0)) / summary.expected_balance * 100).toFixed(2) : '0.00'}%</span>
-                    </div>
                   );
                 }
                 return null;
