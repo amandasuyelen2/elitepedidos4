@@ -23,6 +23,12 @@ const DeliveryOrdersPage: React.FC = () => {
   const [overdueCount, setOverdueCount] = useState(0);
   const [autoRefresh, setAutoRefresh] = useState(true);
   const [lastRefresh, setLastRefresh] = useState(new Date());
+  const [deliveryStats, setDeliveryStats] = useState({
+    totalDeliveries: 0,
+    totalFees: 0,
+    averageFee: 0,
+    completedDeliveries: 0
+  });
 
   // Update current time every minute
   useEffect(() => {
@@ -62,6 +68,33 @@ const DeliveryOrdersPage: React.FC = () => {
     
     setOverdueCount(overdue);
   }, [orders, currentTime]);
+
+  // Calculate delivery statistics
+  useEffect(() => {
+    const today = new Date().toDateString();
+    const todayOrders = orders.filter(order => 
+      new Date(order.created_at).toDateString() === today
+    );
+    
+    const completedOrders = todayOrders.filter(order => 
+      order.status === 'delivered'
+    );
+    
+    const totalFees = todayOrders.reduce((sum, order) => 
+      sum + (order.delivery_fee || 0), 0
+    );
+    
+    const completedFees = completedOrders.reduce((sum, order) => 
+      sum + (order.delivery_fee || 0), 0
+    );
+    
+    setDeliveryStats({
+      totalDeliveries: todayOrders.length,
+      totalFees: completedFees,
+      averageFee: completedOrders.length > 0 ? completedFees / completedOrders.length : 0,
+      completedDeliveries: completedOrders.length
+    });
+  }, [orders]);
 
   const toggleAutoRefresh = () => {
     setAutoRefresh(prev => !prev);
@@ -327,6 +360,87 @@ const DeliveryOrdersPage: React.FC = () => {
       </header>
 
       <div className="max-w-7xl mx-auto px-3 sm:px-4 py-4 sm:py-6">
+        {/* Delivery Earnings Summary */}
+        <div className="bg-gradient-to-r from-green-500 to-emerald-600 rounded-xl shadow-sm p-4 sm:p-6 mb-4 sm:mb-6 text-white">
+          <div className="flex items-center justify-between mb-4">
+            <div>
+              <h2 className="text-lg sm:text-xl font-bold flex items-center gap-2">
+                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1" />
+                </svg>
+                Ganhos de Hoje
+              </h2>
+              <p className="text-green-100 text-sm">
+                {new Date().toLocaleDateString('pt-BR', { 
+                  weekday: 'long', 
+                  year: 'numeric', 
+                  month: 'long', 
+                  day: 'numeric' 
+                })}
+              </p>
+            </div>
+            <div className="text-right">
+              <p className="text-2xl sm:text-3xl font-bold">
+                {new Intl.NumberFormat('pt-BR', {
+                  style: 'currency',
+                  currency: 'BRL'
+                }).format(deliveryStats.totalFees)}
+              </p>
+              <p className="text-green-100 text-sm">Total em Taxas</p>
+            </div>
+          </div>
+          
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+            <div className="bg-white/10 backdrop-blur-sm rounded-lg p-3 text-center">
+              <p className="text-2xl font-bold">{deliveryStats.totalDeliveries}</p>
+              <p className="text-green-100 text-sm">Pedidos Hoje</p>
+            </div>
+            
+            <div className="bg-white/10 backdrop-blur-sm rounded-lg p-3 text-center">
+              <p className="text-2xl font-bold">{deliveryStats.completedDeliveries}</p>
+              <p className="text-green-100 text-sm">Entregues</p>
+            </div>
+            
+            <div className="bg-white/10 backdrop-blur-sm rounded-lg p-3 text-center">
+              <p className="text-lg font-bold">
+                {new Intl.NumberFormat('pt-BR', {
+                  style: 'currency',
+                  currency: 'BRL'
+                }).format(deliveryStats.averageFee)}
+              </p>
+              <p className="text-green-100 text-sm">Taxa Média</p>
+            </div>
+            
+            <div className="bg-white/10 backdrop-blur-sm rounded-lg p-3 text-center">
+              <p className="text-lg font-bold">
+                {deliveryStats.totalDeliveries > 0 
+                  ? Math.round((deliveryStats.completedDeliveries / deliveryStats.totalDeliveries) * 100)
+                  : 0}%
+              </p>
+              <p className="text-green-100 text-sm">Taxa Entrega</p>
+            </div>
+          </div>
+          
+          {deliveryStats.totalDeliveries > 0 && (
+            <div className="mt-4 bg-white/10 backdrop-blur-sm rounded-lg p-3">
+              <div className="flex items-center justify-between text-sm">
+                <span>Progresso do Dia:</span>
+                <span>{deliveryStats.completedDeliveries} de {deliveryStats.totalDeliveries} pedidos</span>
+              </div>
+              <div className="w-full bg-white/20 rounded-full h-2 mt-2">
+                <div 
+                  className="bg-white rounded-full h-2 transition-all duration-500"
+                  style={{ 
+                    width: `${deliveryStats.totalDeliveries > 0 
+                      ? (deliveryStats.completedDeliveries / deliveryStats.totalDeliveries) * 100 
+                      : 0}%` 
+                  }}
+                ></div>
+              </div>
+            </div>
+          )}
+        </div>
+
         {/* Stats */}
         <div className="bg-white rounded-xl shadow-sm p-4 sm:p-6 mb-4 sm:mb-6">
           <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 sm:gap-0">
